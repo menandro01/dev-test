@@ -36,6 +36,12 @@ class Photo implements HttpGetActionInterface
      */
     protected $http;
 
+    protected $request;
+
+    protected $customerSession;
+
+    protected $customerRepository;
+
     /**
      * Constructor
      *
@@ -48,12 +54,18 @@ class Photo implements HttpGetActionInterface
         PageFactory $resultPageFactory,
         Json $json,
         LoggerInterface $logger,
-        Http $http
+        Http $http,
+        \Magento\Framework\App\RequestInterface $request,
+        \Magento\Customer\Model\Session $customerSession,
+        \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
     ) {
         $this->resultPageFactory = $resultPageFactory;
         $this->serializer = $json;
         $this->logger = $logger;
         $this->http = $http;
+        $this->request = $request;
+        $this->customerSession = $customerSession;
+        $this->customerRepository = $customerRepository;
     }
 
     /**
@@ -63,7 +75,17 @@ class Photo implements HttpGetActionInterface
      */
     public function execute()
     {
-        $photo = new Animal\Cat();
+        $customer = $this->customerRepository->getById($this->customerSession->getCustomerId());
+        if ($animal = $this->request->getParam('animal')){
+            $customer->setCustomAttribute('animal_profile', $animal);
+            $this->customerRepository->save($customer);
+        } else {
+            if ($customer->getCustomAttribute('animal_profile')){
+                $animal = $customer->getCustomAttribute('animal_profile')->getValue();
+            }
+        }
+
+        $photo = $this->getPhoto($animal);
 
         try {
             return $this->jsonResponse(['photo' => $photo->getContent()]);
@@ -87,6 +109,23 @@ class Photo implements HttpGetActionInterface
         return $this->http->setBody(
             $this->serializer->serialize($response)
         );
+    }
+
+    protected function getPhoto($animal){
+        switch ($animal){
+            case 'dog':
+                $photo = new Animal\Dog;
+                break;
+            case 'llama':
+                $photo = new Animal\Llama;
+                break;
+            case 'anteater':
+                $photo = new Animal\Anteater;
+                break;
+            default: //cat
+                $photo = new Animal\Cat();
+        }
+        return $photo;
     }
 }
 

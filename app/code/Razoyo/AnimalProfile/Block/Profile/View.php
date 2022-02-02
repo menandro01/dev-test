@@ -14,6 +14,10 @@ class View extends \Magento\Framework\View\Element\Template
      */
     private $customerSession;
 
+    protected $animals;
+
+    protected $customerRepository;
+
     /**
      * Constructor
      *
@@ -23,10 +27,14 @@ class View extends \Magento\Framework\View\Element\Template
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \Magento\Customer\Model\Session $customerSession,
+        \Razoyo\AnimalProfile\Model\Animals\Source\Animals $animals,
+        \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
         array $data = []
     ) {
         parent::__construct($context, $data);
         $this->customerSession = $customerSession;
+        $this->animals = $animals;
+        $this->customerRepository = $customerRepository;
     }
 
     public function getGreeting()
@@ -37,6 +45,20 @@ class View extends \Magento\Framework\View\Element\Template
     public function getPhotoUrl()
     {
         return $this->getUrl('animalid/profile/photo');
+    }
+
+    public function getAnimalOptions()
+    {
+        return $this->animals->toOptionArray();
+    }
+
+    public function getAnimalProfile(){
+        $customer = $this->customerRepository->getById($this->customerSession->getId());
+        if ($customer->getCustomAttribute('animal_profile')){
+            return $customer->getCustomAttribute('animal_profile')->getValue();
+        } else {
+            return false;
+        }
     }
 }
 
